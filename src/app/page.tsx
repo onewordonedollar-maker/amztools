@@ -379,9 +379,10 @@ export default function ProfitCalculator() {
                                 <Input
                                   type="number"
                                   step="0.01"
-                                  value={typeof value === 'number' ? value : 0}
+                                  min="0"
+                                  value={typeof value === 'number' ? value.toFixed(2) : 0}
                                   onChange={(e) => updateCell(row.id, col as keyof ProductData, e.target.value)}
-                                  className="h-8 text-xs"
+                                  className="h-8 text-xs min-w-[80px]"
                                 />
                               ) : isPercentage ? (
                                 <span className={isMissing ? 'text-red-500' : ''}>
