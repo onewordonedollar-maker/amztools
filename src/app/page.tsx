@@ -319,6 +319,8 @@ export default function ProfitCalculator() {
       aoa.push(rowData);
     });
 
+    const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+
     // 根据内容自动调整列宽
     const colWidths: { wch: number }[] = [];
 
