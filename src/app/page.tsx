@@ -42,15 +42,6 @@ export default function ProfitCalculator() {
   const [fileName, setFileName] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 格式化数字为两位小数
-  const formatNumber = (value: any): string => {
-    if (typeof value === 'number') {
-      return value.toFixed(2);
-    }
-    const num = parseFloat(value);
-    return isNaN(num) ? '0.00' : num.toFixed(2);
-  };
-
   // 列顺序定义（按照用户给定的序号顺序）
   const columnOrder = [
     '亚马逊主图',        // 1
@@ -519,17 +510,17 @@ export default function ProfitCalculator() {
                                   type="number"
                                   step="0.01"
                                   min="0"
-                                  value={formatNumber(value)}
+                                  value={typeof value === 'number' ? value.toFixed(2) : 0}
                                   onChange={(e) => updateCell(row.id, col as keyof ProductData, e.target.value)}
                                   className="h-8 text-xs min-w-[80px]"
                                 />
                               ) : isPercentage ? (
                                 <span className={isMissing ? 'text-red-500' : ''}>
-                                  {formatNumber(value)}%
+                                  {(value as number).toFixed(2)}%
                                 </span>
                               ) : typeof value === 'number' ? (
                                 <span className={isMissing ? 'text-red-500' : ''}>
-                                  {formatNumber(value)}
+                                  {value.toFixed(2)}
                                 </span>
                               ) : (
                                 <span>{value}</span>
