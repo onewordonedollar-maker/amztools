@@ -173,7 +173,7 @@ export default function ProfitCalculator() {
           const 产品链接 = row[6] || ''; // G列
           const 价格 = row[22] || 0; // W列
           const FBA费 = row[30] || 0; // AE列
-          const 包装重量 = row[56] || 0; // BG列
+          const 包装重量 = row[58] || 0; // BG列
 
           return {
             id: index,
