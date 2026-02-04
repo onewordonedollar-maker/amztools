@@ -74,7 +74,7 @@ export default function ProfitCalculator() {
   // 计算利润数据
   const calculateProfit = (item: ProductData): ProductData => {
     // 检查数据缺失
-    const isMissing = !item.实时售价本币 || !item.亚马逊主图;
+    const isMissing = !item.实时售价本币 || !item.亚马逊主图 || !item.包装重量_lb || item.包装重量_lb <= 0;
     
     if (isMissing) {
       return {
@@ -173,7 +173,7 @@ export default function ProfitCalculator() {
           const 产品链接 = row[6] || ''; // G列
           const 价格 = row[22] || 0; // W列
           const FBA费 = row[30] || 0; // AE列
-          const 包装重量 = row[57] || 0; // BG列
+          const 包装重量 = row[56] || 0; // BG列
 
           return {
             id: index,
