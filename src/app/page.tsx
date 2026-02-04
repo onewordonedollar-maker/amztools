@@ -304,7 +304,7 @@ export default function ProfitCalculator() {
           });
         } else if (col === '含广利润率') {
           // 含广利润率 = 含广利润 / 实时售价本币 * 100%
-          rowData.push({ f: `=${columns['含广利润']}${row}/${columns['实时售价本币']}${row}*100`, z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
+          rowData.push({ f: `=${columns['含广利润']}${row}/${columns['实时售价本币']}${row}*100`, z: '0.00%', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else if (col === '不含广利润') {
           // 不含广告利润 = 实时售价本币 - 产品成本 - AMZ佣金 - VAT - 头程成本 - FBA费 - FBA仓储费 - 退款费 - 其他
           rowData.push({
@@ -314,10 +314,10 @@ export default function ProfitCalculator() {
           });
         } else if (col === '不含广利润率') {
           // 不含广告利润率 = 不含广告利润 / 实时售价本币 * 100%
-          rowData.push({ f: `=${columns['不含广利润']}${row}/${columns['实时售价本币']}${row}*100`, z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
+          rowData.push({ f: `=${columns['不含广利润']}${row}/${columns['实时售价本币']}${row}*100`, z: '0.00%', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else if (col.includes('利润率')) {
           // 其他利润率列
-          rowData.push({ v: (value as number).toFixed(2), z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
+          rowData.push({ v: (value as number).toFixed(2), z: '0.00%', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else if (typeof value === 'number') {
           rowData.push({ v: value, z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else {
