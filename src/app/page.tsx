@@ -251,24 +251,8 @@ export default function ProfitCalculator() {
       columns[col] = getColumnLetter(index);
     });
 
-    // 构建表头（带样式）
-    const header = columnOrder.map(col => ({
-      v: col,
-      s: {
-        fill: {
-          fgColor: { rgb: "FF87CEEB" }  // 天蓝色背景
-        },
-        font: {
-          name: "Arial",
-          bold: true,
-          color: { rgb: "FF000000" }  // 黑色字体
-        },
-        alignment: {
-          horizontal: "center",
-          vertical: "center"
-        }
-      }
-    }));
+    // 构建表头
+    const header = columnOrder;
     const aoa: any[][] = [header];
 
     // 构建数据行（带公式）
@@ -388,6 +372,25 @@ export default function ProfitCalculator() {
       }
 
       colWidths.push({ wch: finalWidth });
+    });
+
+    // 设置表头样式
+    columnOrder.forEach((col, index) => {
+      const cellAddress = `${getColumnLetter(index)}1`;
+      worksheet[cellAddress].s = {
+        fill: {
+          fgColor: { rgb: "FF87CEEB" }  // 天蓝色背景
+        },
+        font: {
+          name: "Arial",
+          bold: true,
+          color: { rgb: "FF000000" }  // 黑色字体
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center"
+        }
+      };
     });
 
     worksheet['!cols'] = colWidths;
