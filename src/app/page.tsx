@@ -324,6 +324,18 @@ export default function ProfitCalculator() {
     const colWidths = columnOrder.map(() => ({ wch: 15 }));
     worksheet['!cols'] = colWidths;
 
+    // 为所有单元格设置等线字体
+    for (const cellAddress in worksheet) {
+      if (cellAddress.startsWith('!')) continue; // 跳过元数据
+      if (!worksheet[cellAddress].s) {
+        worksheet[cellAddress].s = {};
+      }
+      worksheet[cellAddress].s.font = {
+        name: '等线',
+        sz: 11
+      };
+    }
+
     // 为利润率列设置百分比格式
     columnOrder.forEach((col, index) => {
       if (col.includes('利润率')) {
@@ -389,7 +401,7 @@ export default function ProfitCalculator() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="max-h-[70vh] overflow-auto border border-slate-200 dark:border-slate-700 rounded">
+              <div className="max-h-[70vh] overflow-auto border border-slate-200 dark:border-slate-700 rounded" style={{ fontFamily: '"DengXian", "等线", "Microsoft YaHei", sans-serif' }}>
                 <table className="w-full border-collapse sticky top-0">
                   <thead>
                     <tr className="bg-slate-100 dark:bg-slate-800 sticky top-0 z-10">
