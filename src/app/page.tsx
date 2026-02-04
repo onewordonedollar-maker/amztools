@@ -231,31 +231,111 @@ export default function ProfitCalculator() {
     );
   };
 
+  // 获取列字母（0 -> A, 1 -> B, ..., 25 -> Z, 26 -> AA, ...）
+  const getColumnLetter = (index: number): string => {
+    let letter = '';
+    while (index >= 0) {
+      letter = String.fromCharCode((index % 26) + 65) + letter;
+      index = Math.floor(index / 26) - 1;
+    }
+    return letter;
+  };
+
   // 导出Excel
   const exportToExcel = () => {
     if (data.length === 0) return;
 
     // 过滤掉数据缺失的行
-    const exportData = data.filter(item => item.数据缺失 !== '是');
+    const validData = data.filter(item => item.数据缺失 !== '是');
 
-    // 按照columnOrder的顺序导出
-    const exportRows = exportData.map(item => {
-      const row: any = {};
-      columnOrder.forEach(col => {
-        if (col === '亚马逊主图') {
-          row[col] = item[col as keyof ProductData];
-        } else if (col.includes('利润率')) {
-          row[col] = (item[col as keyof ProductData] as number).toFixed(2) + '%';
-        } else {
-          row[col] = typeof item[col as keyof ProductData] === 'number' 
-            ? (item[col as keyof ProductData] as number).toFixed(2)
-            : item[col as keyof ProductData];
-        }
-      });
-      return row;
+    if (validData.length === 0) return;
+
+    // 列字母映射
+    const columns: { [key: string]: string } = {};
+    columnOrder.forEach((col, index) => {
+      columns[col] = getColumnLetter(index);
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(exportRows, { header: columnOrder });
+    // 构建表头
+    const header = columnOrder;
+    const aoa: any[][] = [header];
+
+    // 构建数据行（带公式）
+    validData.forEach((item, rowIndex) => {
+      const row = 2 + rowIndex; // Excel行号（从1开始，表头是第1行）
+      const rowData: any[] = [];
+
+      columnOrder.forEach((col) => {
+        const value = item[col as keyof ProductData];
+        const colLetter = columns[col];
+        const cellAddress = `${colLetter}${row}`;
+
+        // 为利润和利润率相关的列添加公式
+        if (col === '产品成本') {
+          // 产品成本 = 产品成本RMB / 当前汇率
+          rowData.push({ f: `=${columns['产品成本RMB']}${row}/${columns['当前汇率']}${row}` });
+        } else if (col === 'AMZ佣金') {
+          // AMZ佣金 = 实时售价本币 * 15%
+          rowData.push({ f: `=${columns['实时售价本币']}${row}*0.15` });
+        } else if (col === '头程成本') {
+          // 头程成本 = 头程单价 / 当前汇率 * 头程重量
+          rowData.push({ f: `=${columns['头程单价']}${row}/${columns['当前汇率']}${row}*${columns['头程重量']}${row}` });
+        } else if (col === '头程重量') {
+          // 头程重量 = 包装重量_lb * 0.454
+          rowData.push({ f: `=${columns['包装重量_lb']}${row}*0.454` });
+        } else if (col === '站内广告') {
+          // 站内广告 = 实时售价本币 * 20%
+          rowData.push({ f: `=${columns['实时售价本币']}${row}*0.20` });
+        } else if (col === '退款费') {
+          // 退款费 = 实时售价本币 * 5%
+          rowData.push({ f: `=${columns['实时售价本币']}${row}*0.05` });
+        } else if (col === '含广利润') {
+          // 含广利润 = 实时售价本币 - 产品成本 - AMZ佣金 - VAT - 头程成本 - FBA费 - FBA仓储费 - 站内广告 - 退款费 - 其他
+          rowData.push({
+            f: `=${columns['实时售价本币']}${row}-${columns['产品成本']}${row}-${columns['AMZ佣金']}${row}-${columns['VAT']}${row}-${columns['头程成本']}${row}-${columns['FBA费']}${row}-${columns['FBA仓储费']}${row}-${columns['站内广告']}${row}-${columns['退款费']}${row}-${columns['其他']}${row}`
+          });
+        } else if (col === '含广利润率') {
+          // 含广利润率 = 含广利润 / 实时售价本币 * 100%
+          rowData.push({ f: `=${columns['含广利润']}${row}/${columns['实时售价本币']}${row}*100` });
+        } else if (col === '不含广利润') {
+          // 不含广告利润 = 实时售价本币 - 产品成本 - AMZ佣金 - VAT - 头程成本 - FBA费 - FBA仓储费 - 退款费 - 其他
+          rowData.push({
+            f: `=${columns['实时售价本币']}${row}-${columns['产品成本']}${row}-${columns['AMZ佣金']}${row}-${columns['VAT']}${row}-${columns['头程成本']}${row}-${columns['FBA费']}${row}-${columns['FBA仓储费']}${row}-${columns['退款费']}${row}-${columns['其他']}${row}`
+          });
+        } else if (col === '不含广利润率') {
+          // 不含广告利润率 = 不含广告利润 / 实时售价本币 * 100%
+          rowData.push({ f: `=${columns['不含广利润']}${row}/${columns['实时售价本币']}${row}*100` });
+        } else if (col.includes('利润率')) {
+          // 其他利润率列
+          rowData.push((value as number).toFixed(2) + '%');
+        } else if (typeof value === 'number') {
+          rowData.push(value);
+        } else {
+          rowData.push(value || '');
+        }
+      });
+
+      aoa.push(rowData);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+
+    // 设置列宽
+    const colWidths = columnOrder.map(() => ({ wch: 15 }));
+    worksheet['!cols'] = colWidths;
+
+    // 为利润率列设置百分比格式
+    columnOrder.forEach((col, index) => {
+      if (col.includes('利润率')) {
+        for (let row = 2; row <= validData.length + 1; row++) {
+          const cellAddress = `${getColumnLetter(index)}${row}`;
+          if (worksheet[cellAddress]) {
+            worksheet[cellAddress].z = '0.00'; // 两位小数
+          }
+        }
+      }
+    });
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, '利润表');
     XLSX.writeFile(workbook, `利润表_${new Date().getTime()}.xlsx`);
