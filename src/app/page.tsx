@@ -394,7 +394,7 @@ export default function ProfitCalculator() {
       <div className="max-w-[95vw] mx-auto">
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-2xl">亚马逊利润计算器</CardTitle>
+            <CardTitle className="text-2xl">初选产品利润快速计算</CardTitle>
             <CardDescription>
               上传Excel表格，自动计算各项成本和利润指标
             </CardDescription>
