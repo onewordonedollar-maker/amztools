@@ -320,8 +320,50 @@ export default function ProfitCalculator() {
 
     const worksheet = XLSX.utils.aoa_to_sheet(aoa);
 
-    // 设置列宽
-    const colWidths = columnOrder.map(() => ({ wch: 15 }));
+    // 根据内容自动调整列宽
+    const colWidths: { wch: number }[] = [];
+
+    columnOrder.forEach((col, colIndex) => {
+      // 计算表头长度
+      let maxLength = String(col).length;
+
+      // 计算该列所有数据的最大长度
+      validData.forEach((item) => {
+        const value = item[col as keyof ProductData];
+        let valueLength = 0;
+
+        if (col === '亚马逊主图') {
+          // 图片列设置固定宽度
+          valueLength = 20;
+        } else if (col === '产品链接') {
+          // 链接列设置固定宽度
+          valueLength = 25;
+        } else if (typeof value === 'string') {
+          valueLength = value.length;
+        } else if (typeof value === 'number') {
+          // 数字转换为字符串并计算长度（包括小数点和两位小数）
+          valueLength = String(value.toFixed(2)).length;
+        }
+
+        if (valueLength > maxLength) {
+          maxLength = valueLength;
+        }
+      });
+
+      // 设置合理的列宽范围（最小8，最大50）
+      const minWidth = 8;
+      const maxWidth = 50;
+      let finalWidth = maxLength + 2; // 加上一些padding
+
+      if (finalWidth < minWidth) {
+        finalWidth = minWidth;
+      } else if (finalWidth > maxWidth) {
+        finalWidth = maxWidth;
+      }
+
+      colWidths.push({ wch: finalWidth });
+    });
+
     worksheet['!cols'] = colWidths;
 
     // 为利润率列设置百分比格式
