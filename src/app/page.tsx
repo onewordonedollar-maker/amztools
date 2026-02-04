@@ -350,21 +350,25 @@ export default function ProfitCalculator() {
                               }`}
                             >
                               {isImage ? (
-                                <div className="w-16 h-16">
+                                <div className="w-20 h-20">
                                   {value ? (
                                     <img
                                       src={value}
                                       alt="产品图片"
-                                      className="w-full h-full object-cover rounded"
+                                      className="w-full h-full object-cover rounded border border-slate-200 dark:border-slate-700"
                                       onError={(e) => {
+                                        // 图片加载失败时显示占位文本
                                         e.currentTarget.style.display = 'none';
+                                        const placeholder = e.currentTarget.parentElement?.querySelector('.placeholder');
+                                        if (placeholder) {
+                                          (placeholder as HTMLElement).style.display = 'flex';
+                                        }
                                       }}
                                     />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
-                                      无图片
-                                    </div>
-                                  )}
+                                  ) : null}
+                                  <div className="placeholder w-full h-full flex items-center justify-center text-xs text-muted-foreground bg-slate-50 dark:bg-slate-800 rounded">
+                                    {value ? '图片加载失败' : '无图片'}
+                                  </div>
                                 </div>
                               ) : isLink ? (
                                 value ? (
