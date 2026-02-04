@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -242,151 +243,188 @@ export default function ProfitCalculator() {
   };
 
   // 导出Excel
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     if (data.length === 0) return;
 
-    // 列字母映射
-    const columns: { [key: string]: string } = {};
-    columnOrder.forEach((col, index) => {
-      columns[col] = getColumnLetter(index);
-    });
+    try {
+      // 创建新的workbook
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('利润表');
 
-    // 构建表头
-    const header = columnOrder;
-    const aoa: any[][] = [header];
+      // 设置列
+      worksheet.columns = columnOrder.map((col, index) => ({
+        header: col,
+        key: col,
+        width: 20,
+      }));
 
-    // 构建数据行（带公式）
-    data.forEach((item, rowIndex) => {
-      const row = 2 + rowIndex; // Excel行号（从1开始，表头是第1行）
-      const rowData: any[] = [];
+      // 添加表头样式
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true, size: 11 };
+      headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+      headerRow.height = 25;
 
-      // 检查该行是否数据缺失
-      const isMissing = item.数据缺失 === '是';
+      // 添加数据行
+      for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
+        const item = data[rowIndex];
+        const isMissing = item.数据缺失 === '是';
 
-      columnOrder.forEach((col) => {
-        const value = item[col as keyof ProductData];
-        const colLetter = columns[col];
+        const row = worksheet.addRow();
 
-        // 特殊处理亚马逊主图列：添加超链接
-        if (col === '亚马逊主图') {
-          if (value && typeof value === 'string') {
-            rowData.push({
-              v: '查看图片',
-              l: { Target: value, Tooltip: '点击查看产品图片' },
-              ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } })
-            });
-          } else {
-            rowData.push({
-              v: '无图片',
-              ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } })
-            });
+        for (let colIndex = 0; colIndex < columnOrder.length; colIndex++) {
+          const col = columnOrder[colIndex];
+          const value = item[col as keyof ProductData];
+          const cell = row.getCell(colIndex + 1);
+
+          // 设置字体颜色（数据缺失行标红）
+          if (isMissing) {
+            cell.font = { color: { argb: 'FFFF0000' } };
           }
-          return; // 处理完亚马逊主图后跳过后续逻辑
+
+          // 特殊处理亚马逊主图列：嵌入图片
+          if (col === '亚马逊主图' && value && typeof value === 'string') {
+            try {
+              // 尝试下载图片
+              const response = await fetch(value);
+              if (!response.ok) throw new Error('Failed to fetch image');
+              
+              const blob = await response.blob();
+              const arrayBuffer = await blob.arrayBuffer();
+              const buffer = Buffer.from(arrayBuffer);
+
+              // 获取图片扩展名
+              const extension = value.split('.').pop()?.toLowerCase() || 'png';
+              const imageType = extension === 'jpg' || extension === 'jpeg' 
+                ? ExcelJS.ImageType.JPEG 
+                : ExcelJS.ImageType.PNG;
+
+              // 添加图片到workbook
+              const imageId = workbook.addImage({
+                buffer: buffer,
+                extension: extension as any,
+              });
+
+              // 计算图片位置
+              const imageRow = rowIndex + 2; // 数据从第2行开始
+              
+              // 添加图片到worksheet
+              worksheet.addImage(imageId, {
+                tl: { col: colIndex, row: imageRow - 1 },
+                ext: { width: 100, height: 100 },
+                editAs: 'oneCell',
+              });
+
+              // 调整行高以适应图片
+              worksheet.getRow(imageRow).height = 100;
+              cell.value = '';
+            } catch (err) {
+              // 图片下载失败，显示文本
+              cell.value = '图片加载失败';
+            }
+          } 
+          // 为利润和利润率相关的列添加公式
+          else if (col === '产品成本') {
+            cell.value = {
+              formula: `${columnOrder.indexOf('产品成本RMB') + 1}${rowIndex + 2}/${columnOrder.indexOf('当前汇率') + 1}${rowIndex + 2}`,
+            };
+            cell.numFmt = '0.00';
+          } else if (col === 'AMZ佣金') {
+            cell.value = {
+              formula: `${columnOrder.indexOf('实时售价本币') + 1}${rowIndex + 2}*0.15`,
+            };
+            cell.numFmt = '0.00';
+          } else if (col === '头程成本') {
+            cell.value = {
+              formula: `${columnOrder.indexOf('头程单价') + 1}${rowIndex + 2}/${columnOrder.indexOf('当前汇率') + 1}${rowIndex + 2}*${columnOrder.indexOf('头程重量') + 1}${rowIndex + 2}`,
+            };
+            cell.numFmt = '0.00';
+          } else if (col === '头程重量') {
+            cell.value = {
+              formula: `${columnOrder.indexOf('包装重量_lb') + 1}${rowIndex + 2}*0.454`,
+            };
+            cell.numFmt = '0.00';
+          } else if (col === '站内广告') {
+            cell.value = {
+              formula: `${columnOrder.indexOf('实时售价本币') + 1}${rowIndex + 2}*0.20`,
+            };
+            cell.numFmt = '0.00';
+          } else if (col === '退款费') {
+            cell.value = {
+              formula: `${columnOrder.indexOf('实时售价本币') + 1}${rowIndex + 2}*0.05`,
+            };
+            cell.numFmt = '0.00';
+          } else if (col === '含广利润') {
+            const priceCol = columnOrder.indexOf('实时售价本币') + 1;
+            const costCol = columnOrder.indexOf('产品成本') + 1;
+            const amzCol = columnOrder.indexOf('AMZ佣金') + 1;
+            const vatCol = columnOrder.indexOf('VAT') + 1;
+            const shippingCol = columnOrder.indexOf('头程成本') + 1;
+            const fbaCol = columnOrder.indexOf('FBA费') + 1;
+            const storageCol = columnOrder.indexOf('FBA仓储费') + 1;
+            const adCol = columnOrder.indexOf('站内广告') + 1;
+            const refundCol = columnOrder.indexOf('退款费') + 1;
+            const otherCol = columnOrder.indexOf('其他') + 1;
+            
+            cell.value = {
+              formula: `${priceCol}${rowIndex + 2}-${costCol}${rowIndex + 2}-${amzCol}${rowIndex + 2}-${vatCol}${rowIndex + 2}-${shippingCol}${rowIndex + 2}-${fbaCol}${rowIndex + 2}-${storageCol}${rowIndex + 2}-${adCol}${rowIndex + 2}-${refundCol}${rowIndex + 2}-${otherCol}${rowIndex + 2}`,
+            };
+            cell.numFmt = '0.00';
+          } else if (col === '含广利润率') {
+            cell.value = {
+              formula: `${columnOrder.indexOf('含广利润') + 1}${rowIndex + 2}/${columnOrder.indexOf('实时售价本币') + 1}${rowIndex + 2}`,
+            };
+            cell.numFmt = '0.00%';
+          } else if (col === '不含广利润') {
+            const priceCol = columnOrder.indexOf('实时售价本币') + 1;
+            const costCol = columnOrder.indexOf('产品成本') + 1;
+            const amzCol = columnOrder.indexOf('AMZ佣金') + 1;
+            const vatCol = columnOrder.indexOf('VAT') + 1;
+            const shippingCol = columnOrder.indexOf('头程成本') + 1;
+            const fbaCol = columnOrder.indexOf('FBA费') + 1;
+            const storageCol = columnOrder.indexOf('FBA仓储费') + 1;
+            const refundCol = columnOrder.indexOf('退款费') + 1;
+            const otherCol = columnOrder.indexOf('其他') + 1;
+            
+            cell.value = {
+              formula: `${priceCol}${rowIndex + 2}-${costCol}${rowIndex + 2}-${amzCol}${rowIndex + 2}-${vatCol}${rowIndex + 2}-${shippingCol}${rowIndex + 2}-${fbaCol}${rowIndex + 2}-${storageCol}${rowIndex + 2}-${refundCol}${rowIndex + 2}-${otherCol}${rowIndex + 2}`,
+            };
+            cell.numFmt = '0.00';
+          } else if (col === '不含广利润率') {
+            cell.value = {
+              formula: `${columnOrder.indexOf('不含广利润') + 1}${rowIndex + 2}/${columnOrder.indexOf('实时售价本币') + 1}${rowIndex + 2}`,
+            };
+            cell.numFmt = '0.00%';
+          } else if (col.includes('利润率')) {
+            cell.numFmt = '0.00%';
+            cell.value = value;
+          } else if (typeof value === 'number') {
+            cell.numFmt = '0.00';
+            cell.value = value;
+          } else {
+            cell.value = value || '';
+          }
         }
-
-        // 为利润和利润率相关的列添加公式
-        if (col === '产品成本') {
-          // 产品成本 = 产品成本RMB / 当前汇率
-          rowData.push({ f: `=${columns['产品成本RMB']}${row}/${columns['当前汇率']}${row}`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
-        } else if (col === 'AMZ佣金') {
-          // AMZ佣金 = 实时售价本币 * 15%
-          rowData.push({ f: `=${columns['实时售价本币']}${row}*0.15`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
-        } else if (col === '头程成本') {
-          // 头程成本 = 头程单价 / 当前汇率 * 头程重量
-          rowData.push({ f: `=${columns['头程单价']}${row}/${columns['当前汇率']}${row}*${columns['头程重量']}${row}`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
-        } else if (col === '头程重量') {
-          // 头程重量 = 包装重量_lb * 0.454
-          rowData.push({ f: `=${columns['包装重量_lb']}${row}*0.454`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
-        } else if (col === '站内广告') {
-          // 站内广告 = 实时售价本币 * 20%
-          rowData.push({ f: `=${columns['实时售价本币']}${row}*0.20`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
-        } else if (col === '退款费') {
-          // 退款费 = 实时售价本币 * 5%
-          rowData.push({ f: `=${columns['实时售价本币']}${row}*0.05`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
-        } else if (col === '含广利润') {
-          // 含广利润 = 实时售价本币 - 产品成本 - AMZ佣金 - VAT - 头程成本 - FBA费 - FBA仓储费 - 站内广告 - 退款费 - 其他
-          rowData.push({
-            f: `=${columns['实时售价本币']}${row}-${columns['产品成本']}${row}-${columns['AMZ佣金']}${row}-${columns['VAT']}${row}-${columns['头程成本']}${row}-${columns['FBA费']}${row}-${columns['FBA仓储费']}${row}-${columns['站内广告']}${row}-${columns['退款费']}${row}-${columns['其他']}${row}`,
-            z: '0.00',
-            ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } })
-          });
-        } else if (col === '含广利润率') {
-          // 含广利润率 = 含广利润 / 实时售价本币
-          rowData.push({ f: `=${columns['含广利润']}${row}/${columns['实时售价本币']}${row}`, z: '0.00%', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
-        } else if (col === '不含广利润') {
-          // 不含广告利润 = 实时售价本币 - 产品成本 - AMZ佣金 - VAT - 头程成本 - FBA费 - FBA仓储费 - 退款费 - 其他
-          rowData.push({
-            f: `=${columns['实时售价本币']}${row}-${columns['产品成本']}${row}-${columns['AMZ佣金']}${row}-${columns['VAT']}${row}-${columns['头程成本']}${row}-${columns['FBA费']}${row}-${columns['FBA仓储费']}${row}-${columns['退款费']}${row}-${columns['其他']}${row}`,
-            z: '0.00',
-            ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } })
-          });
-        } else if (col === '不含广利润率') {
-          // 不含广告利润率 = 不含广告利润 / 实时售价本币
-          rowData.push({ f: `=${columns['不含广利润']}${row}/${columns['实时售价本币']}${row}`, z: '0.00%', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
-        } else if (col.includes('利润率')) {
-          // 其他利润率列
-          rowData.push({ v: (value as number).toFixed(2), z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
-        } else if (typeof value === 'number') {
-          rowData.push({ v: value, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
-        } else {
-          rowData.push({ v: value || '', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
-        }
-      });
-
-      aoa.push(rowData);
-    });
-
-    const worksheet = XLSX.utils.aoa_to_sheet(aoa);
-
-    // 根据内容自动调整列宽
-    const colWidths: { wch: number }[] = [];
-
-    columnOrder.forEach((col, colIndex) => {
-      // 计算表头长度
-      let maxLength = String(col).length;
-
-      // 计算该列所有数据的最大长度
-      data.forEach((item) => {
-        const value = item[col as keyof ProductData];
-        let valueLength = 0;
-
-        if (col === '亚马逊主图') {
-          // 图片列设置固定宽度
-          valueLength = 20;
-        } else if (col === '产品链接') {
-          // 链接列设置固定宽度
-          valueLength = 25;
-        } else if (typeof value === 'string') {
-          valueLength = value.length;
-        } else if (typeof value === 'number') {
-          // 数字转换为字符串并计算长度（包括小数点和两位小数）
-          valueLength = String(value.toFixed(2)).length;
-        }
-
-        if (valueLength > maxLength) {
-          maxLength = valueLength;
-        }
-      });
-
-      // 设置合理的列宽范围（最小8，最大50）
-      const minWidth = 8;
-      const maxWidth = 50;
-      let finalWidth = maxLength + 2; // 加上一些padding
-
-      if (finalWidth < minWidth) {
-        finalWidth = minWidth;
-      } else if (finalWidth > maxWidth) {
-        finalWidth = maxWidth;
       }
 
-      colWidths.push({ wch: finalWidth });
-    });
+      // 调整亚马逊主图列的列宽
+      const mainImageColIndex = columnOrder.indexOf('亚马逊主图');
+      if (mainImageColIndex >= 0) {
+        worksheet.getColumn(mainImageColIndex + 1).width = 15;
+      }
 
-    worksheet['!cols'] = colWidths;
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, '利润表');
-    XLSX.writeFile(workbook, `利润表_${new Date().getTime()}.xlsx`);
+      // 导出文件
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `利润表_${new Date().getTime()}.xlsx`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('导出Excel失败:', error);
+      alert('导出Excel失败，请重试');
+    }
   };
 
   return (
