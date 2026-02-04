@@ -270,7 +270,7 @@ export default function ProfitCalculator() {
       };
 
       // 数据缺失的字体颜色为红色，正常为黑色
-      const fontColor = isMissing ? "FF0000" : "FF000000";
+      const fontColor = isMissing ? "FF0000" : "000000";
 
       columnOrder.forEach((col) => {
         const value = item[col as keyof ProductData];
@@ -379,12 +379,13 @@ export default function ProfitCalculator() {
       const cellAddress = `${getColumnLetter(index)}1`;
       worksheet[cellAddress].s = {
         fill: {
-          fgColor: { rgb: "FF87CEEB" }  // 天蓝色背景
+          patternType: "solid",
+          fgColor: { rgb: "87CEEB" }  // 天蓝色背景
         },
         font: {
           name: "Arial",
           bold: true,
-          color: { rgb: "FF000000" }  // 黑色字体
+          color: { rgb: "000000" }  // 黑色字体
         },
         alignment: {
           horizontal: "center",
