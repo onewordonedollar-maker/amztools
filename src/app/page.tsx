@@ -305,10 +305,10 @@ export default function ProfitCalculator() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
+              <div className="max-h-[70vh] overflow-auto border border-slate-200 dark:border-slate-700 rounded">
+                <table className="w-full border-collapse sticky top-0">
                   <thead>
-                    <tr className="bg-slate-100 dark:bg-slate-800">
+                    <tr className="bg-slate-100 dark:bg-slate-800 sticky top-0 z-10">
                       {columnOrder.map((col) => (
                         <th
                           key={col}
