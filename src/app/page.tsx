@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Download, ArrowRight, CheckCircle, AlertCircle, CloudUpload, RefreshCw } from 'lucide-react';
+import { Upload, Download, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface ProductData {
   id: number;
@@ -37,41 +37,9 @@ interface ProductData {
   数据缺失: string;
 }
 
-// 飞书字段ID映射
-const FEISHU_FIELD_IDS = {
-  亚马逊主图: 'flddml4wmb',
-  类目: 'fldwFTo9LY',
-  站点: 'fldpcXFDal',
-  产品名: 'fldH5INOVk',
-  产品链接: 'fldEopW2To',
-  实时售价本币: 'fldduLim2A',
-  当前汇率: 'fldGqxbueq',
-  产品成本: 'fldqkx9xHY',
-  AMZ佣金: 'fldh4aqTa4',
-  VAT: 'fldr27MmNc',
-  头程成本: 'fldBaQekUV',
-  FBA费: 'fldsyK6Vpy',
-  FBA仓储费: 'fldBjOiKdF',
-  站内广告: 'fldvZNDMT8',
-  退款费: 'fldsKugYYs',
-  其他: 'fld7u5cm1v',
-  含广利润: 'fld9hgF59K',
-  含广利润率: 'fldDMEGiE5',
-  不含广利润: 'fldeBbXY1b',
-  不含广利润率: 'fldGfXzsAw',
-  产品成本RMB: 'fldgzhcfxh',
-  头程单价: 'fld0SJ7TcR',
-  头程重量: 'fldplNQlvD',
-  包装重量_lb: 'fldimq2vje',
-  数据缺失: 'fld5yJubY1',
-};
-
 export default function ProfitCalculator() {
   const [data, setData] = useState<ProductData[]>([]);
   const [fileName, setFileName] = useState<string>('');
-  const [isWritingToFeishu, setIsWritingToFeishu] = useState(false);
-  const [isSyncingFeishuFormat, setIsSyncingFeishuFormat] = useState(false);
-  const [feishuStatus, setFeishuStatus] = useState<{ type: 'success' | 'error' | ''; message: string }>({ type: '', message: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 列顺序定义（按照用户给定的序号顺序）
@@ -421,76 +389,6 @@ export default function ProfitCalculator() {
     XLSX.writeFile(workbook, `利润表_${new Date().getTime()}.xlsx`);
   };
 
-  // 写入飞书表格
-  const writeToFeishu = async () => {
-    if (data.length === 0) return;
-
-    setIsWritingToFeishu(true);
-    setFeishuStatus({ type: '', message: '' });
-
-    try {
-      const response = await fetch('/api/feishu/write-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setFeishuStatus({
-          type: 'success',
-          message: result.message,
-        });
-      } else {
-        setFeishuStatus({
-          type: 'error',
-          message: result.message || '写入失败',
-        });
-      }
-    } catch (error) {
-      setFeishuStatus({
-        type: 'error',
-        message: `写入失败: ${error instanceof Error ? error.message : '未知错误'}`,
-      });
-    } finally {
-      setIsWritingToFeishu(false);
-    }
-  };
-
-  // 同步飞书表格格式（更新字段类型）
-  const syncFeishuFormat = async () => {
-    setIsSyncingFeishuFormat(true);
-    setFeishuStatus({ type: '', message: '' });
-
-    try {
-      const response = await fetch('/api/feishu/sync-format', {
-        method: 'POST',
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setFeishuStatus({
-          type: result.failCount > 0 ? 'error' : 'success',
-          message: result.message,
-        });
-      } else {
-        setFeishuStatus({
-          type: 'error',
-          message: result.message || '同步失败',
-        });
-      }
-    } catch (error) {
-      setFeishuStatus({
-        type: 'error',
-        message: `同步失败: ${error instanceof Error ? error.message : '未知错误'}`,
-      });
-    } finally {
-      setIsSyncingFeishuFormat(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6">
       <div className="max-w-[95vw] mx-auto">
@@ -521,41 +419,10 @@ export default function ProfitCalculator() {
                 </span>
               )}
               {data.length > 0 && (
-                <>
-                  <Button onClick={exportToExcel} className="gap-2" variant="outline">
-                    <Download className="w-4 h-4" />
-                    导出Excel
-                  </Button>
-                  <Button
-                    onClick={syncFeishuFormat}
-                    disabled={isSyncingFeishuFormat}
-                    className="gap-2"
-                    variant="secondary"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${isSyncingFeishuFormat ? 'animate-spin' : ''}`} />
-                    {isSyncingFeishuFormat ? '同步中...' : '同步飞书格式'}
-                  </Button>
-                  <Button
-                    onClick={writeToFeishu}
-                    disabled={isWritingToFeishu}
-                    className="gap-2"
-                    variant="default"
-                  >
-                    <CloudUpload className="w-4 h-4" />
-                    {isWritingToFeishu ? '写入中...' : '写入飞书'}
-                  </Button>
-                </>
-              )}
-              {feishuStatus.message && (
-                <div className={`mt-4 p-3 rounded-md flex items-center gap-2 ${
-                  feishuStatus.type === 'success' ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' :
-                  feishuStatus.type === 'error' ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' :
-                  'bg-slate-50 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
-                }`}>
-                  {feishuStatus.type === 'success' && <CheckCircle className="w-4 h-4" />}
-                  {feishuStatus.type === 'error' && <AlertCircle className="w-4 h-4" />}
-                  {feishuStatus.message}
-                </div>
+                <Button onClick={exportToExcel} className="gap-2" variant="outline">
+                  <Download className="w-4 h-4" />
+                  导出Excel
+                </Button>
               )}
             </div>
           </CardContent>
