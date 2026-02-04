@@ -167,7 +167,7 @@ export default function ProfitCalculator() {
       const parsedData: ProductData[] = rows
         .map((row, index) => {
           // 列映射（0-based索引）
-          const 主图 = row[0] || ''; // A列
+          const 主图 = row[7] || ''; // H列
           const 类目 = row[10] || ''; // K列
           const 产品名 = row[5] || ''; // F列
           const 产品链接 = row[6] || ''; // G列
