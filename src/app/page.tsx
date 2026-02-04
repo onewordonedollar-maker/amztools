@@ -37,39 +37,6 @@ interface ProductData {
   数据缺失: string;
 }
 
-// 飞书配置
-const FEISHU_CONFIG = {
-  APP_ID: 'cli_a9084a1b94b99bb4',
-  APP_SECRET: 'Xl9sDmT9XjF8Vj3LlT9pC7JkP6R9bY5n',
-  APP_TOKEN: 'BQJyby28AaMob3ss3ZicHttqnmb',
-  TABLE_ID: 'tblYf3Evgym8glcO',
-};
-
-// 获取飞书访问令牌（前端直接调用）
-async function getFeishuAccessToken(): Promise<string> {
-  // 使用已经验证有效的token（在实际生产中应该从服务器获取）
-  // 这里为了演示直接使用之前获取的token
-  return 't-g10424fxDP4D3N7WPFFXMN6VXAU5ICAPC2X3AQ4Y';
-
-  // 如果需要重新获取，可以使用以下代码：
-  /*
-  const response = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      app_id: FEISHU_CONFIG.APP_ID,
-      app_secret: FEISHU_CONFIG.APP_SECRET,
-    }),
-  });
-
-  const result = await response.json();
-  if (result.code !== 0) {
-    throw new Error(`获取访问令牌失败: ${result.msg}`);
-  }
-  return result.tenant_access_token;
-  */
-}
-
 // 飞书字段ID映射
 const FEISHU_FIELD_IDS = {
   亚马逊主图: 'flddml4wmb',
@@ -462,106 +429,26 @@ export default function ProfitCalculator() {
     setFeishuStatus({ type: '', message: '' });
 
     try {
-      // 获取飞书访问令牌
-      const accessToken = await getFeishuAccessToken();
-
-      // 将数据转换为飞书API格式
-      const records = data.map(item => {
-        const record: { [key: string]: any } = {};
-        const columnMap: { [key: string]: keyof ProductData } = {
-          亚马逊主图: '亚马逊主图',
-          类目: '类目',
-          站点: '站点',
-          产品名: '产品名',
-          产品链接: '产品链接',
-          实时售价本币: '实时售价本币',
-          当前汇率: '当前汇率',
-          产品成本: '产品成本',
-          AMZ佣金: 'AMZ佣金',
-          VAT: 'VAT',
-          头程成本: '头程成本',
-          FBA费: 'FBA费',
-          FBA仓储费: 'FBA仓储费',
-          站内广告: '站内广告',
-          退款费: '退款费',
-          其他: '其他',
-          含广利润: '含广利润',
-          含广利润率: '含广利润率',
-          不含广利润: '不含广利润',
-          不含广利润率: '不含广利润率',
-          产品成本RMB: '产品成本RMB',
-          头程单价: '头程单价',
-          头程重量: '头程重量',
-          包装重量_lb: '包装重量_lb',
-          数据缺失: '数据缺失',
-        };
-
-        Object.entries(columnMap).forEach(([fieldName, dataKey]) => {
-          const fieldId = FEISHU_FIELD_IDS[fieldName as keyof typeof FEISHU_FIELD_IDS];
-          const value = item[dataKey];
-
-          if (fieldId) {
-            // 数值类型字段转换为数字
-            if (typeof value === 'number') {
-              record[fieldId] = value;
-            } else {
-              record[fieldId] = value || '';
-            }
-          }
-        });
-
-        return record;
+      const response = await fetch('/api/feishu/write-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data }),
       });
 
-      // 批量写入飞书（每批最多500条）
-      const batchSize = 500;
-      const batches = [];
+      const result = await response.json();
 
-      for (let i = 0; i < records.length; i += batchSize) {
-        batches.push(records.slice(i, i + batchSize));
-      }
-
-      let successCount = 0;
-      let errorCount = 0;
-
-      for (const batch of batches) {
-        const response = await fetch(
-          `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_CONFIG.APP_TOKEN}/tables/${FEISHU_CONFIG.TABLE_ID}/records/batch_create`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              records: batch.map(r => ({ fields: r })),
-            }),
-          }
-        );
-
-        const result = await response.json();
-
-        if (result.code === 0) {
-          successCount += batch.length;
-        } else {
-          errorCount += batch.length;
-          console.error('写入飞书失败:', result);
-        }
-      }
-
-      if (errorCount > 0) {
+      if (result.success) {
         setFeishuStatus({
-          type: 'error',
-          message: `部分数据写入失败: 成功 ${successCount} 条，失败 ${errorCount} 条`,
+          type: 'success',
+          message: result.message,
         });
       } else {
         setFeishuStatus({
-          type: 'success',
-          message: `成功写入 ${successCount} 条数据到飞书表格！`,
+          type: 'error',
+          message: result.message || '写入失败',
         });
       }
     } catch (error) {
-      console.error('写入飞书出错:', error);
       setFeishuStatus({
         type: 'error',
         message: `写入失败: ${error instanceof Error ? error.message : '未知错误'}`,
@@ -577,88 +464,23 @@ export default function ProfitCalculator() {
     setFeishuStatus({ type: '', message: '' });
 
     try {
-      const accessToken = await getFeishuAccessToken();
-
-      // 字段类型配置
-      const fieldConfigs: { [key: string]: any } = {
-        // 文本类型字段
-        亚马逊主图: { type: 1, ui_type: 'Text' },
-        类目: { type: 1, ui_type: 'Text' },
-        站点: { type: 1, ui_type: 'Text' },
-        产品名: { type: 1, ui_type: 'Text' },
-        产品链接: { type: 1, ui_type: 'Text' },
-        数据缺失: { type: 1, ui_type: 'Text' },
-
-        // 数值类型字段（货币格式）
-        实时售价本币: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        当前汇率: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.0000", type: "number" } } },
-        产品成本: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        AMZ佣金: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        VAT: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        头程成本: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        FBA费: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        FBA仓储费: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        站内广告: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        退款费: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        其他: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        含广利润: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        不含广利润: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        产品成本RMB: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        头程单价: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "currency" } } },
-        头程重量: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "number" } } },
-        包装重量_lb: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00", type: "number" } } },
-
-        // 百分比类型字段
-        含广利润率: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00%", type: "percent" } } },
-        不含广利润率: { type: 2, ui_type: 'Number', property: { formatter: { pattern: "0.00%", type: "percent" } } },
-      };
-
-      const results: { field: string; success: boolean; message: string }[] = [];
-
-      // 批量更新字段类型
-      for (const [fieldName, fieldConfig] of Object.entries(fieldConfigs)) {
-        try {
-          const fieldId = FEISHU_FIELD_IDS[fieldName as keyof typeof FEISHU_FIELD_IDS];
-          if (!fieldId) continue;
-
-          const response = await fetch(
-            `https://open.feishu.cn/open-apis/bitable/v1/apps/${FEISHU_CONFIG.APP_TOKEN}/tables/${FEISHU_CONFIG.TABLE_ID}/fields/${fieldId}`,
-            {
-              method: 'PATCH',
-              headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(fieldConfig),
-            }
-          );
-
-          const result = await response.json();
-
-          if (result.code === 0) {
-            results.push({ field: fieldName, success: true, message: '更新成功' });
-          } else {
-            results.push({ field: fieldName, success: false, message: result.msg || '更新失败' });
-          }
-        } catch (error) {
-          results.push({
-            field: fieldName,
-            success: false,
-            message: error instanceof Error ? error.message : '未知错误',
-          });
-        }
-
-        // 添加延迟避免API限流
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
-      const successCount = results.filter(r => r.success).length;
-      const failCount = results.filter(r => !r.success).length;
-
-      setFeishuStatus({
-        type: failCount > 0 ? 'error' : 'success',
-        message: `格式同步完成：成功 ${successCount} 个，失败 ${failCount} 个`,
+      const response = await fetch('/api/feishu/sync-format', {
+        method: 'POST',
       });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setFeishuStatus({
+          type: result.failCount > 0 ? 'error' : 'success',
+          message: result.message,
+        });
+      } else {
+        setFeishuStatus({
+          type: 'error',
+          message: result.message || '同步失败',
+        });
+      }
     } catch (error) {
       setFeishuStatus({
         type: 'error',
