@@ -267,6 +267,23 @@ export default function ProfitCalculator() {
         const value = item[col as keyof ProductData];
         const colLetter = columns[col];
 
+        // 特殊处理亚马逊主图列：添加超链接
+        if (col === '亚马逊主图') {
+          if (value && typeof value === 'string') {
+            rowData.push({
+              v: '查看图片',
+              l: { Target: value, Tooltip: '点击查看产品图片' },
+              ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } })
+            });
+          } else {
+            rowData.push({
+              v: '无图片',
+              ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } })
+            });
+          }
+          return; // 处理完亚马逊主图后跳过后续逻辑
+        }
+
         // 为利润和利润率相关的列添加公式
         if (col === '产品成本') {
           // 产品成本 = 产品成本RMB / 当前汇率
