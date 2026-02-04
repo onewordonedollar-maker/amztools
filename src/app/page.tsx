@@ -251,8 +251,24 @@ export default function ProfitCalculator() {
       columns[col] = getColumnLetter(index);
     });
 
-    // 构建表头
-    const header = columnOrder;
+    // 构建表头（带样式）
+    const header = columnOrder.map(col => ({
+      v: col,
+      s: {
+        fill: {
+          fgColor: { rgb: "FF87CEEB" }  // 天蓝色背景
+        },
+        font: {
+          name: "Arial",
+          bold: true,
+          color: { rgb: "FF000000" }  // 黑色字体
+        },
+        alignment: {
+          horizontal: "center",
+          vertical: "center"
+        }
+      }
+    }));
     const aoa: any[][] = [header];
 
     // 构建数据行（带公式）
@@ -263,6 +279,15 @@ export default function ProfitCalculator() {
       // 检查该行是否数据缺失
       const isMissing = item.数据缺失 === '是';
 
+      // 基础字体样式
+      const baseFontStyle = {
+        name: "Arial",
+        size: 11
+      };
+
+      // 数据缺失的字体颜色为红色，正常为黑色
+      const fontColor = isMissing ? "FF0000" : "FF000000";
+
       columnOrder.forEach((col) => {
         const value = item[col as keyof ProductData];
         const colLetter = columns[col];
@@ -270,49 +295,49 @@ export default function ProfitCalculator() {
         // 为利润和利润率相关的列添加公式
         if (col === '产品成本') {
           // 产品成本 = 产品成本RMB / 当前汇率
-          rowData.push({ f: `=${columns['产品成本RMB']}${row}/${columns['当前汇率']}${row}`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+          rowData.push({ f: `=${columns['产品成本RMB']}${row}/${columns['当前汇率']}${row}`, z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else if (col === 'AMZ佣金') {
           // AMZ佣金 = 实时售价本币 * 15%
-          rowData.push({ f: `=${columns['实时售价本币']}${row}*0.15`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+          rowData.push({ f: `=${columns['实时售价本币']}${row}*0.15`, z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else if (col === '头程成本') {
           // 头程成本 = 头程单价 / 当前汇率 * 头程重量
-          rowData.push({ f: `=${columns['头程单价']}${row}/${columns['当前汇率']}${row}*${columns['头程重量']}${row}`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+          rowData.push({ f: `=${columns['头程单价']}${row}/${columns['当前汇率']}${row}*${columns['头程重量']}${row}`, z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else if (col === '头程重量') {
           // 头程重量 = 包装重量_lb * 0.454
-          rowData.push({ f: `=${columns['包装重量_lb']}${row}*0.454`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+          rowData.push({ f: `=${columns['包装重量_lb']}${row}*0.454`, z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else if (col === '站内广告') {
           // 站内广告 = 实时售价本币 * 20%
-          rowData.push({ f: `=${columns['实时售价本币']}${row}*0.20`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+          rowData.push({ f: `=${columns['实时售价本币']}${row}*0.20`, z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else if (col === '退款费') {
           // 退款费 = 实时售价本币 * 5%
-          rowData.push({ f: `=${columns['实时售价本币']}${row}*0.05`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+          rowData.push({ f: `=${columns['实时售价本币']}${row}*0.05`, z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else if (col === '含广利润') {
           // 含广利润 = 实时售价本币 - 产品成本 - AMZ佣金 - VAT - 头程成本 - FBA费 - FBA仓储费 - 站内广告 - 退款费 - 其他
           rowData.push({
             f: `=${columns['实时售价本币']}${row}-${columns['产品成本']}${row}-${columns['AMZ佣金']}${row}-${columns['VAT']}${row}-${columns['头程成本']}${row}-${columns['FBA费']}${row}-${columns['FBA仓储费']}${row}-${columns['站内广告']}${row}-${columns['退款费']}${row}-${columns['其他']}${row}`,
             z: '0.00',
-            ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } })
+            s: { font: { ...baseFontStyle, color: { rgb: fontColor } } }
           });
         } else if (col === '含广利润率') {
           // 含广利润率 = 含广利润 / 实时售价本币 * 100%
-          rowData.push({ f: `=${columns['含广利润']}${row}/${columns['实时售价本币']}${row}*100`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+          rowData.push({ f: `=${columns['含广利润']}${row}/${columns['实时售价本币']}${row}*100`, z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else if (col === '不含广利润') {
           // 不含广告利润 = 实时售价本币 - 产品成本 - AMZ佣金 - VAT - 头程成本 - FBA费 - FBA仓储费 - 退款费 - 其他
           rowData.push({
             f: `=${columns['实时售价本币']}${row}-${columns['产品成本']}${row}-${columns['AMZ佣金']}${row}-${columns['VAT']}${row}-${columns['头程成本']}${row}-${columns['FBA费']}${row}-${columns['FBA仓储费']}${row}-${columns['退款费']}${row}-${columns['其他']}${row}`,
             z: '0.00',
-            ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } })
+            s: { font: { ...baseFontStyle, color: { rgb: fontColor } } }
           });
         } else if (col === '不含广利润率') {
           // 不含广告利润率 = 不含广告利润 / 实时售价本币 * 100%
-          rowData.push({ f: `=${columns['不含广利润']}${row}/${columns['实时售价本币']}${row}*100`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+          rowData.push({ f: `=${columns['不含广利润']}${row}/${columns['实时售价本币']}${row}*100`, z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else if (col.includes('利润率')) {
           // 其他利润率列
-          rowData.push({ v: (value as number).toFixed(2), z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+          rowData.push({ v: (value as number).toFixed(2), z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else if (typeof value === 'number') {
-          rowData.push({ v: value, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+          rowData.push({ v: value, z: '0.00', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         } else {
-          rowData.push({ v: value || '', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+          rowData.push({ v: value || '', s: { font: { ...baseFontStyle, color: { rgb: fontColor } } } });
         }
       });
 
