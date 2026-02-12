@@ -11,7 +11,6 @@ import { Upload, Download, ArrowRight, CheckCircle, AlertCircle } from 'lucide-r
 interface ProductData {
   id: number;
   亚马逊主图: string;
-  商品主图链接: string;
   类目: string;
   站点: string;
   产品名: string;
@@ -46,9 +45,8 @@ export default function ProfitCalculator() {
   // 列顺序定义（按照用户给定的序号顺序）
   const columnOrder = [
     '亚马逊主图',        // 1
-    '商品主图链接',      // 2 (新增)
-    '类目',              // 3
-    '站点',              // 4
+    '类目',              // 2
+    '站点',              // 3
     '产品名',            // 4
     '产品链接',          // 5
     '实时售价本币',      // 6
@@ -184,7 +182,6 @@ export default function ProfitCalculator() {
           return {
             id: index,
             亚马逊主图: 主图,
-            商品主图链接: 主图,
             类目,
             站点: 'US',
             产品名,
@@ -285,23 +282,6 @@ export default function ProfitCalculator() {
             });
           }
           return; // 处理完亚马逊主图后跳过后续逻辑
-        }
-
-        // 特殊处理商品主图链接列：添加超链接
-        if (col === '商品主图链接') {
-          if (value && typeof value === 'string') {
-            rowData.push({
-              v: '查看链接',
-              l: { Target: value, Tooltip: '点击打开商品主图链接' },
-              ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } })
-            });
-          } else {
-            rowData.push({
-              v: '无链接',
-              ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } })
-            });
-          }
-          return; // 处理完商品主图链接后跳过后续逻辑
         }
 
         // 为利润和利润率相关的列添加公式
@@ -486,7 +466,7 @@ export default function ProfitCalculator() {
                           ].includes(col);
 
                           const isImage = col === '亚马逊主图';
-                          const isLink = col === '产品链接' || col === '商品主图链接';
+                          const isLink = col === '产品链接';
                           const isPercentage = col.includes('利润率');
                           const isMissing = row.数据缺失 === '是';
 
