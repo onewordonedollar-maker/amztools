@@ -11,6 +11,7 @@ import { Upload, Download, ArrowRight, CheckCircle, AlertCircle } from 'lucide-r
 interface ProductData {
   id: number;
   亚马逊主图: string;
+  商品主图链接: string;
   类目: string;
   站点: string;
   产品名: string;
@@ -45,30 +46,31 @@ export default function ProfitCalculator() {
   // 列顺序定义（按照用户给定的序号顺序）
   const columnOrder = [
     '亚马逊主图',        // 1
-    '类目',              // 2
-    '站点',              // 3
-    '产品名',            // 4
-    '产品链接',          // 5
-    '实时售价本币',      // 6
-    '当前汇率',          // 7
-    '产品成本',          // 8
-    'AMZ佣金',           // 9
-    'VAT',               // 10
-    '头程成本',          // 11
-    'FBA费',             // 12
-    'FBA仓储费',         // 13
-    '站内广告',          // 14
-    '退款费',            // 15
-    '其他',              // 16
-    '含广利润',          // 17
-    '含广利润率',        // 18
-    '不含广利润',        // 19
-    '不含广利润率',      // 20
-    '产品成本RMB',       // 21
-    '头程单价',          // 22
-    '头程重量',          // 23
-    '包装重量_lb',       // 24
-    '数据缺失',          // 25
+    '商品主图链接',      // 2 (新增)
+    '类目',              // 3
+    '站点',              // 4
+    '产品名',            // 5
+    '产品链接',          // 6
+    '实时售价本币',      // 7
+    '当前汇率',          // 8
+    '产品成本',          // 9
+    'AMZ佣金',           // 10
+    'VAT',               // 11
+    '头程成本',          // 12
+    'FBA费',             // 13
+    'FBA仓储费',         // 14
+    '站内广告',          // 15
+    '退款费',            // 16
+    '其他',              // 17
+    '含广利润',          // 18
+    '含广利润率',        // 19
+    '不含广利润',        // 20
+    '不含广利润率',      // 21
+    '产品成本RMB',       // 22
+    '头程单价',          // 23
+    '头程重量',          // 24
+    '包装重量_lb',       // 25
+    '数据缺失',          // 26
   ];
 
   // 计算利润数据
@@ -182,6 +184,7 @@ export default function ProfitCalculator() {
           return {
             id: index,
             亚马逊主图: 主图,
+            商品主图链接: 主图,
             类目,
             站点: 'US',
             产品名,
@@ -284,6 +287,22 @@ export default function ProfitCalculator() {
           return; // 处理完亚马逊主图后跳过后续逻辑
         }
 
+        // 特殊处理商品主图链接列：直接显示原始URL文本
+        if (col === '商品主图链接') {
+          if (value && typeof value === 'string') {
+            rowData.push({
+              v: value,
+              ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } })
+            });
+          } else {
+            rowData.push({
+              v: '',
+              ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } })
+            });
+          }
+          return; // 处理完商品主图链接后跳过后续逻辑
+        }
+
         // 为利润和利润率相关的列添加公式
         if (col === '产品成本') {
           // 产品成本 = 产品成本RMB / 当前汇率
@@ -353,6 +372,9 @@ export default function ProfitCalculator() {
         if (col === '亚马逊主图') {
           // 图片列设置固定宽度
           valueLength = 20;
+        } else if (col === '商品主图链接') {
+          // 商品主图链接列设置固定宽度
+          valueLength = 50;
         } else if (col === '产品链接') {
           // 链接列设置固定宽度
           valueLength = 25;
