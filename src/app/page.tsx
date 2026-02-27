@@ -99,27 +99,11 @@ export default function ProfitCalculator() {
     
     const 数据缺失 = missingFields.length > 0 ? missingFields.join('、') : '否';
 
-    // 计算体积重KG：优先使用已存储的值，只有当值为0时才重新计算
-    let 体积重KG = item.体积重KG || 0;
-    if (体积重KG === 0 && item.包装尺寸单位换算) {
-      // 解析格式如 "10x20x30 cm"，提取数值
-      const dimensions = item.包装尺寸单位换算.match(/[\d.]+/g);
-      if (dimensions && dimensions.length >= 3) {
-        const 长 = parseFloat(dimensions[0]) || 0;
-        const 宽 = parseFloat(dimensions[1]) || 0;
-        const 高 = parseFloat(dimensions[2]) || 0;
-        体积重KG = Math.round(((长 * 宽 * 高) / 6000) * 100) / 100; // 保留2位小数
-      }
-    }
-
-    // 计算产品实重：优先使用已存储的值，只有当值为0时才重新计算
-    let 产品实重 = item.产品实重 || 0;
-    if (产品实重 === 0 && item.包装重量_lb) {
-      产品实重 = Math.round((item.包装重量_lb * 0.454) * 100) / 100;
-    }
-
-    // 计算头程重量 = 取体积重KG和产品实重的较大值，保留2位小数
-    const 头程重量 = Math.round(Math.max(体积重KG, 产品实重) * 100) / 100;
+    // 使用已存储的体积重KG、产品实重和头程重量（在初始解析时已计算）
+    // 只有当这些值为0时才重新计算（兼容旧数据）
+    const 体积重KG = item.体积重KG || 0;
+    const 产品实重 = item.产品实重 || 0;
+    const 头程重量 = item.头程重量 || Math.round(Math.max(体积重KG, 产品实重) * 100) / 100;
 
     // 计算头程成本
     const 头程成本 = item.当前汇率 > 0 ? item.头程单价 / item.当前汇率 * 头程重量 : 0;
@@ -217,6 +201,24 @@ export default function ProfitCalculator() {
             : 包装重量Raw;
           const 包装尺寸单位换算 = row[61] || ''; // BJ列
 
+          // 计算体积重KG：从包装尺寸解析
+          let 体积重KG = 0;
+          if (包装尺寸单位换算) {
+            const dimensions = 包装尺寸单位换算.match(/[\d.]+/g);
+            if (dimensions && dimensions.length >= 3) {
+              const 长 = parseFloat(dimensions[0]) || 0;
+              const 宽 = parseFloat(dimensions[1]) || 0;
+              const 高 = parseFloat(dimensions[2]) || 0;
+              体积重KG = Math.round(((长 * 宽 * 高) / 6000) * 100) / 100;
+            }
+          }
+
+          // 计算产品实重
+          const 产品实重 = Math.round((包装重量 * 0.454) * 100) / 100;
+
+          // 计算头程重量 = 取体积重KG和产品实重的较大值
+          const 头程重量 = Math.round(Math.max(体积重KG, 产品实重) * 100) / 100;
+
           return {
             id: index,
             亚马逊主图: 主图,
@@ -232,10 +234,10 @@ export default function ProfitCalculator() {
             AMZ佣金: 0,
             VAT: 0,
             头程单价: 6.5,
-            头程重量: 0,
+            头程重量,
             包装重量_lb: 包装重量,
-            体积重KG: 0,
-            产品实重: 0,
+            体积重KG,
+            产品实重,
             包装尺寸单位换算,
             头程成本: 0,
             FBA费,
