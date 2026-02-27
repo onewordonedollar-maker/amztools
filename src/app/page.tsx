@@ -26,6 +26,7 @@ interface ProductData {
   头程重量: number;
   包装重量_lb: number;
   体积重KG: number;
+  产品实重: number;
   包装尺寸单位换算: string;
   头程成本: number;
   FBA费: number;
@@ -74,7 +75,8 @@ export default function ProfitCalculator() {
     '头程重量',          // 25
     '包装重量_lb',       // 26
     '体积重KG',          // 27 (新增)
-    '数据缺失',          // 28
+    '产品实重',          // 28 (新增：包装重量lb * 0.454)
+    '数据缺失',          // 29
   ];
 
   // 计算利润数据
@@ -106,12 +108,15 @@ export default function ProfitCalculator() {
         const 长 = parseFloat(dimensions[0]) || 0;
         const 宽 = parseFloat(dimensions[1]) || 0;
         const 高 = parseFloat(dimensions[2]) || 0;
-        体积重KG = (长 * 宽 * 高) / 6000;
+        体积重KG = Math.round(((长 * 宽 * 高) / 6000) * 100) / 100; // 保留2位小数
       }
     }
 
-    // 计算头程重量
-    const 头程重量 = item.包装重量_lb * 0.454;
+    // 计算产品实重 = 包装重量_lb * 0.454，保留2位小数
+    const 产品实重 = Math.round((item.包装重量_lb * 0.454) * 100) / 100;
+
+    // 计算头程重量 = 取体积重KG和产品实重的较大值，保留2位小数
+    const 头程重量 = Math.round(Math.max(体积重KG, 产品实重) * 100) / 100;
 
     // 计算头程成本
     const 头程成本 = item.当前汇率 > 0 ? item.头程单价 / item.当前汇率 * 头程重量 : 0;
@@ -159,6 +164,7 @@ export default function ProfitCalculator() {
       ...item,
       头程重量,
       体积重KG,
+      产品实重,
       头程成本,
       产品成本,
       AMZ佣金,
@@ -226,6 +232,7 @@ export default function ProfitCalculator() {
             头程重量: 0,
             包装重量_lb: 包装重量,
             体积重KG: 0,
+            产品实重: 0,
             包装尺寸单位换算,
             头程成本: 0,
             FBA费,
@@ -342,7 +349,10 @@ export default function ProfitCalculator() {
         }
 
         // 为利润和利润率相关的列添加公式
-        if (col === '产品成本') {
+        if (col === '体积重KG') {
+          // 体积重KG = 长 * 宽 * 高 / 6000，保留2位小数
+          rowData.push({ v: value, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+        } else if (col === '产品成本') {
           // 产品成本 = 产品成本RMB / 当前汇率
           rowData.push({ f: `=${columns['产品成本RMB']}${row}/${columns['当前汇率']}${row}`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
         } else if (col === 'AMZ佣金') {
@@ -352,7 +362,10 @@ export default function ProfitCalculator() {
           // 头程成本 = 头程单价 / 当前汇率 * 头程重量
           rowData.push({ f: `=${columns['头程单价']}${row}/${columns['当前汇率']}${row}*${columns['头程重量']}${row}`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
         } else if (col === '头程重量') {
-          // 头程重量 = 包装重量_lb * 0.454
+          // 头程重量 = 取体积重KG和产品实重的较大值
+          rowData.push({ f: `=MAX(${columns['体积重KG']}${row},${columns['产品实重']}${row})`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+        } else if (col === '产品实重') {
+          // 产品实重 = 包装重量_lb * 0.454
           rowData.push({ f: `=${columns['包装重量_lb']}${row}*0.454`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
         } else if (col === '站内广告') {
           // 站内广告 = 实时售价本币 * 20%
