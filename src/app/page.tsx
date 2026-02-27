@@ -99,9 +99,9 @@ export default function ProfitCalculator() {
     
     const 数据缺失 = missingFields.length > 0 ? missingFields.join('、') : '否';
 
-    // 计算体积重KG
-    let 体积重KG = 0;
-    if (item.包装尺寸单位换算) {
+    // 计算体积重KG：优先使用已存储的值，只有当值为0时才重新计算
+    let 体积重KG = item.体积重KG || 0;
+    if (体积重KG === 0 && item.包装尺寸单位换算) {
       // 解析格式如 "10x20x30 cm"，提取数值
       const dimensions = item.包装尺寸单位换算.match(/[\d.]+/g);
       if (dimensions && dimensions.length >= 3) {
@@ -112,8 +112,11 @@ export default function ProfitCalculator() {
       }
     }
 
-    // 计算产品实重 = 包装重量_lb * 0.454，保留2位小数
-    const 产品实重 = Math.round((item.包装重量_lb * 0.454) * 100) / 100;
+    // 计算产品实重：优先使用已存储的值，只有当值为0时才重新计算
+    let 产品实重 = item.产品实重 || 0;
+    if (产品实重 === 0 && item.包装重量_lb) {
+      产品实重 = Math.round((item.包装重量_lb * 0.454) * 100) / 100;
+    }
 
     // 计算头程重量 = 取体积重KG和产品实重的较大值，保留2位小数
     const 头程重量 = Math.round(Math.max(体积重KG, 产品实重) * 100) / 100;
