@@ -367,11 +367,11 @@ export default function ProfitCalculator() {
           // 头程成本 = 头程单价 / 当前汇率 * 头程重量
           rowData.push({ f: `=${columns['头程单价']}${row}/${columns['当前汇率']}${row}*${columns['头程重量']}${row}`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
         } else if (col === '头程重量') {
-          // 头程重量 = 取体积重KG和产品实重的较大值
-          rowData.push({ f: `=MAX(${columns['体积重KG']}${row},${columns['产品实重']}${row})`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+          // 头程重量：直接使用计算好的数值（取体积重KG和产品实重的较大值）
+          rowData.push({ v: value, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
         } else if (col === '产品实重') {
-          // 产品实重 = 包装重量_lb * 0.454
-          rowData.push({ f: `=${columns['包装重量_lb']}${row}*0.454`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
+          // 产品实重：直接使用计算好的数值
+          rowData.push({ v: value, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
         } else if (col === '站内广告') {
           // 站内广告 = 实时售价本币 * 20%
           rowData.push({ f: `=${columns['实时售价本币']}${row}*0.20`, z: '0.00', ...(isMissing && { s: { font: { color: { rgb: "FF0000" } } } }) });
