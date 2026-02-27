@@ -513,25 +513,41 @@ export default function ProfitCalculator() {
                               }`}
                             >
                               {isImage ? (
-                                <div className="w-20 h-20">
+                                <div className="w-20 h-20 relative">
                                   {value ? (
-                                    <img
-                                      src={value}
-                                      alt="产品图片"
-                                      className="w-full h-full object-cover rounded border border-slate-200 dark:border-slate-700"
-                                      onError={(e) => {
-                                        // 图片加载失败时显示占位文本
-                                        e.currentTarget.style.display = 'none';
-                                        const placeholder = e.currentTarget.parentElement?.querySelector('.placeholder');
-                                        if (placeholder) {
-                                          (placeholder as HTMLElement).style.display = 'flex';
-                                        }
-                                      }}
-                                    />
-                                  ) : null}
-                                  <div className="placeholder w-full h-full flex items-center justify-center text-xs text-muted-foreground bg-slate-50 dark:bg-slate-800 rounded">
-                                    {value ? '图片加载失败' : '无图片'}
-                                  </div>
+                                    <>
+                                      <img
+                                        src={value}
+                                        alt="产品图片"
+                                        className="w-full h-full object-cover rounded border border-slate-200 dark:border-slate-700"
+                                        onLoad={(e) => {
+                                          // 图片加载成功时隐藏占位符
+                                          const placeholder = e.currentTarget.parentElement?.querySelector('.placeholder');
+                                          if (placeholder) {
+                                            (placeholder as HTMLElement).style.display = 'none';
+                                          }
+                                        }}
+                                        onError={(e) => {
+                                          // 图片加载失败时隐藏图片，显示占位符
+                                          e.currentTarget.style.display = 'none';
+                                          const placeholder = e.currentTarget.parentElement?.querySelector('.placeholder');
+                                          if (placeholder) {
+                                            (placeholder as HTMLElement).style.display = 'flex';
+                                          }
+                                        }}
+                                      />
+                                      <div
+                                        className="placeholder w-full h-full flex items-center justify-center text-xs text-muted-foreground bg-slate-50 dark:bg-slate-800 rounded absolute inset-0"
+                                        style={{ display: 'none' }}
+                                      >
+                                        图片加载失败
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground bg-slate-50 dark:bg-slate-800 rounded">
+                                      无图片
+                                    </div>
+                                  )}
                                 </div>
                               ) : isLink ? (
                                 value ? (
