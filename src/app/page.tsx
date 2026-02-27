@@ -25,6 +25,8 @@ interface ProductData {
   头程单价: number;
   头程重量: number;
   包装重量_lb: number;
+  体积重KG: number;
+  包装尺寸单位换算: string;
   头程成本: number;
   FBA费: number;
   FBA仓储费: number;
@@ -46,8 +48,8 @@ export default function ProfitCalculator() {
   // 列顺序定义（按照用户给定的序号顺序）
   const columnOrder = [
     '亚马逊主图',        // 1
-    '商品主图链接',      // 2 (新增)
-    'IMAG读取',          // 3 (新增)
+    '商品主图链接',      // 2
+    'IMAG读取',          // 3
     '类目',              // 4
     '站点',              // 5
     '产品名',            // 6
@@ -71,19 +73,41 @@ export default function ProfitCalculator() {
     '头程单价',          // 24
     '头程重量',          // 25
     '包装重量_lb',       // 26
-    '数据缺失',          // 27
+    '体积重KG',          // 27 (新增)
+    '数据缺失',          // 28
   ];
 
   // 计算利润数据
   const calculateProfit = (item: ProductData): ProductData => {
-    // 检查数据缺失
-    const isMissing = !item.实时售价本币 || !item.亚马逊主图 || !item.包装重量_lb || item.包装重量_lb <= 0;
+    // 检查数据缺失，记录缺失的字段名
+    const missingFields: string[] = [];
     
-    if (isMissing) {
-      return {
-        ...item,
-        数据缺失: '是',
-      };
+    if (!item.实时售价本币 || item.实时售价本币 <= 0) {
+      missingFields.push('实时售价本币');
+    }
+    if (!item.亚马逊主图) {
+      missingFields.push('亚马逊主图');
+    }
+    if (!item.包装重量_lb || item.包装重量_lb <= 0) {
+      missingFields.push('包装重量_lb');
+    }
+    if (!item.包装尺寸单位换算) {
+      missingFields.push('包装尺寸单位换算');
+    }
+    
+    const 数据缺失 = missingFields.length > 0 ? missingFields.join('、') : '否';
+
+    // 计算体积重KG
+    let 体积重KG = 0;
+    if (item.包装尺寸单位换算) {
+      // 解析格式如 "10x20x30 cm"，提取数值
+      const dimensions = item.包装尺寸单位换算.match(/[\d.]+/g);
+      if (dimensions && dimensions.length >= 3) {
+        const 长 = parseFloat(dimensions[0]) || 0;
+        const 宽 = parseFloat(dimensions[1]) || 0;
+        const 高 = parseFloat(dimensions[2]) || 0;
+        体积重KG = (长 * 宽 * 高) / 6000;
+      }
     }
 
     // 计算头程重量
@@ -134,6 +158,7 @@ export default function ProfitCalculator() {
     return {
       ...item,
       头程重量,
+      体积重KG,
       头程成本,
       产品成本,
       AMZ佣金,
@@ -143,7 +168,7 @@ export default function ProfitCalculator() {
       含广利润率,
       不含广利润,
       不含广利润率,
-      数据缺失: '否',
+      数据缺失,
     };
   };
 
@@ -181,6 +206,7 @@ export default function ProfitCalculator() {
           const 包装重量 = typeof 包装重量Raw === 'string'
             ? parseFloat(包装重量Raw.replace(/[^\d.]/g, '')) || 0
             : 包装重量Raw;
+          const 包装尺寸单位换算 = row[61] || ''; // BJ列
 
           return {
             id: index,
@@ -199,6 +225,8 @@ export default function ProfitCalculator() {
             头程单价: 6.5,
             头程重量: 0,
             包装重量_lb: 包装重量,
+            体积重KG: 0,
+            包装尺寸单位换算,
             头程成本: 0,
             FBA费,
             FBA仓储费: 0,
@@ -264,8 +292,8 @@ export default function ProfitCalculator() {
       const row = 2 + rowIndex; // Excel行号（从1开始，表头是第1行）
       const rowData: any[] = [];
 
-      // 检查该行是否数据缺失
-      const isMissing = item.数据缺失 === '是';
+      // 检查该行是否数据缺失（数据缺失列显示缺失字段名列表，如"实时售价本币、亚马逊主图"，不缺失则显示"否"）
+      const isMissing = item.数据缺失 !== '否' && item.数据缺失 !== '';
 
       columnOrder.forEach((col) => {
         const value = item[col as keyof ProductData];
@@ -503,7 +531,7 @@ export default function ProfitCalculator() {
                           const isImage = col === '亚马逊主图';
                           const isLink = col === '产品链接';
                           const isPercentage = col.includes('利润率');
-                          const isMissing = row.数据缺失 === '是';
+                          const isMissing = row.数据缺失 !== '否' && row.数据缺失 !== '';
 
                           return (
                             <td
@@ -517,7 +545,7 @@ export default function ProfitCalculator() {
                                   {value ? (
                                     <>
                                       <img
-                                        src={value}
+                                        src={String(value)}
                                         alt="产品图片"
                                         className="w-full h-full object-cover rounded border border-slate-200 dark:border-slate-700"
                                         onLoad={(e) => {
@@ -552,7 +580,7 @@ export default function ProfitCalculator() {
                               ) : isLink ? (
                                 value ? (
                                   <a
-                                    href={value}
+                                    href={String(value)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="text-blue-600 hover:underline truncate block max-w-[200px]"
