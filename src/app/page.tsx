@@ -617,6 +617,7 @@ export default function ProfitCalculator() {
                                   min="0"
                                   value={typeof value === 'number' ? value.toFixed(2) : 0}
                                   onChange={(e) => updateCell(row.id, col as keyof ProductData, e.target.value)}
+                                  onFocus={(e) => e.target.select()}
                                   className="h-8 text-xs min-w-[80px]"
                                 />
                               ) : isPercentage ? (
@@ -650,7 +651,7 @@ export default function ProfitCalculator() {
         )}
         
         <div className="text-center text-xs text-muted-foreground mt-6">
-          v1.0.0
+          v1.0.1
         </div>
       </div>
     </div>
