@@ -612,10 +612,16 @@ export default function ProfitCalculator() {
                                 )
                               ) : isEditable ? (
                                 <Input
-                                  type="number"
+                                  type="text"
                                   min="0"
-                                  value={typeof value === 'number' ? value.toFixed(2) : 0}
-                                  onChange={(e) => updateCell(row.id, col as keyof ProductData, e.target.value)}
+                                  value={typeof value === 'number' ? value.toFixed(2) : '0'}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    // 允许输入数字、小数点、空字符串
+                                    if (val === '' || /^[\d.]+$/.test(val)) {
+                                      updateCell(row.id, col as keyof ProductData, val === '' ? 0 : parseFloat(val));
+                                    }
+                                  }}
                                   onFocus={(e) => e.target.select()}
                                   className="h-8 text-xs min-w-[80px]"
                                 />
@@ -650,7 +656,7 @@ export default function ProfitCalculator() {
         )}
         
         <div className="text-center text-xs text-muted-foreground mt-6">
-          v1.0.2
+          v1.0.3
         </div>
       </div>
     </div>
