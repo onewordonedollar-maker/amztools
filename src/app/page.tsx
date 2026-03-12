@@ -44,6 +44,8 @@ interface ProductData {
 export default function ProfitCalculator() {
   const [data, setData] = useState<ProductData[]>([]);
   const [fileName, setFileName] = useState<string>('');
+  const [editingCell, setEditingCell] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 列顺序定义（按照用户给定的序号顺序）
@@ -613,16 +615,20 @@ export default function ProfitCalculator() {
                               ) : isEditable ? (
                                 <Input
                                   type="text"
-                                  min="0"
-                                  value={typeof value === 'number' ? value.toFixed(2) : '0'}
+                                  value={editingCell === `${row.id}-${col}` ? editingValue : (typeof value === 'number' ? value.toFixed(2) : '0')}
                                   onChange={(e) => {
-                                    const val = e.target.value;
-                                    // 允许输入数字、小数点、空字符串
-                                    if (val === '' || /^[\d.]+$/.test(val)) {
-                                      updateCell(row.id, col as keyof ProductData, val === '' ? 0 : parseFloat(val));
-                                    }
+                                    setEditingValue(e.target.value);
                                   }}
-                                  onFocus={(e) => e.target.select()}
+                                  onFocus={(e) => {
+                                    setEditingCell(`${row.id}-${col}`);
+                                    setEditingValue(e.target.value);
+                                    e.target.select();
+                                  }}
+                                  onBlur={(e) => {
+                                    setEditingCell(null);
+                                    const num = parseFloat(e.target.value) || 0;
+                                    updateCell(row.id, col as keyof ProductData, num);
+                                  }}
                                   className="h-8 text-xs min-w-[80px]"
                                 />
                               ) : isPercentage ? (
@@ -656,7 +662,7 @@ export default function ProfitCalculator() {
         )}
         
         <div className="text-center text-xs text-muted-foreground mt-6">
-          v1.0.3
+          v1.0.4
         </div>
       </div>
     </div>

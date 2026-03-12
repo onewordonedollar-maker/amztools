@@ -1,6 +1,6 @@
 {
   "name": "xuanpin-lirun-kuaisuan",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "scripts": {
     "build": "bash ./scripts/build.sh",
