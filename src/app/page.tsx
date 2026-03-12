@@ -548,15 +548,16 @@ export default function ProfitCalculator() {
 
                           const isImage = col === '亚马逊主图';
                           const isLink = col === '产品链接';
+                          const isProductName = col === '产品名';
                           const isPercentage = col.includes('利润率');
                           const isMissing = row.数据缺失 !== '否' && row.数据缺失 !== '';
 
                           return (
                             <td
                               key={col}
-                              className={`px-2 py-2 text-xs border border-slate-200 dark:border-slate-700 ${
+                              className={`px-2 py-2 text-xs border border-slate-200 dark:border-slate-200 ${
                                 isMissing ? 'bg-red-50 dark:bg-red-900/20' : ''
-                              }`}
+                              } ${isProductName ? 'max-w-[200px]' : ''}`}
                             >
                               {isImage ? (
                                 <div className="w-20 h-20 relative">
@@ -624,6 +625,13 @@ export default function ProfitCalculator() {
                               ) : typeof value === 'number' ? (
                                 <span className={isMissing ? 'text-red-500' : ''}>
                                   {value.toFixed(2)}
+                                </span>
+                              ) : isProductName ? (
+                                <span 
+                                  className="block truncate" 
+                                  title={String(value)}
+                                >
+                                  {value}
                                 </span>
                               ) : (
                                 <span>{value}</span>
