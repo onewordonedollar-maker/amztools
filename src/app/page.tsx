@@ -648,6 +648,10 @@ export default function ProfitCalculator() {
             </CardContent>
           </Card>
         )}
+        
+        <div className="text-center text-xs text-muted-foreground mt-6">
+          v1.0.0
+        </div>
       </div>
     </div>
   );
