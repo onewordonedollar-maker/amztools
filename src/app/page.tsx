@@ -613,7 +613,6 @@ export default function ProfitCalculator() {
                               ) : isEditable ? (
                                 <Input
                                   type="number"
-                                  step="0.01"
                                   min="0"
                                   value={typeof value === 'number' ? value.toFixed(2) : 0}
                                   onChange={(e) => updateCell(row.id, col as keyof ProductData, e.target.value)}
@@ -651,7 +650,7 @@ export default function ProfitCalculator() {
         )}
         
         <div className="text-center text-xs text-muted-foreground mt-6">
-          v1.0.1
+          v1.0.2
         </div>
       </div>
     </div>
