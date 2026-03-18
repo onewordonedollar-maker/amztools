@@ -184,24 +184,41 @@ export default function ProfitCalculator() {
       const worksheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
 
+      // 读取表头行，建立列名到索引的映射
+      const headers = jsonData[0] as string[];
+      const colIndexMap: { [key: string]: number } = {};
+      headers.forEach((header, index) => {
+        if (header) {
+          colIndexMap[header.trim()] = index;
+        }
+      });
+
+      // 根据列名获取值的辅助函数
+      const getColValue = (row: any[], colName: string, defaultValue: any = '') => {
+        const index = colIndexMap[colName];
+        if (index === undefined) return defaultValue;
+        const value = row[index];
+        return value !== undefined && value !== null && value !== '' ? value : defaultValue;
+      };
+
       // 跳过表头，从第二行开始
       const rows = jsonData.slice(1);
 
       const parsedData: ProductData[] = rows
         .map((row, index) => {
-          // 列映射（0-based索引）
-          const 主图 = row[7] || ''; // H列
-          const 类目 = row[10] || ''; // K列
-          const 产品名 = row[5] || ''; // F列
-          const 产品链接 = row[6] || ''; // G列
-          const 价格 = row[22] || 0; // W列
-          const FBA费 = row[30] || 0; // AE列
-          const 包装重量Raw = row[58] || 0; // BG列
+          // 列名匹配取值（不再使用硬编码索引）
+          const 主图 = getColValue(row, '商品主图', '');
+          const 类目 = getColValue(row, '大类目', '');
+          const 产品名 = getColValue(row, '商品标题', '');
+          const 产品链接 = getColValue(row, '商品详情页链接', '');
+          const 价格 = getColValue(row, '价格($)', 0);
+          const FBA费 = getColValue(row, 'FBA($)', 0);
+          const 包装重量Raw = getColValue(row, '包装重量', 0);
           // 去除单位，只保留数值
           const 包装重量 = typeof 包装重量Raw === 'string'
             ? parseFloat(包装重量Raw.replace(/[^\d.]/g, '')) || 0
             : 包装重量Raw;
-          const 包装尺寸单位换算 = row[61] || ''; // BJ列
+          const 包装尺寸单位换算 = getColValue(row, '包装尺寸（单位换算）', '');
 
           // 计算体积重KG：从包装尺寸解析
           let 体积重KG = 0;
@@ -226,7 +243,7 @@ export default function ProfitCalculator() {
             亚马逊主图: 主图,
             商品主图链接: 主图,
             类目,
-            站点: 'US',
+            站点: '',
             产品名,
             产品链接,
             实时售价本币: 价格,
@@ -662,7 +679,7 @@ export default function ProfitCalculator() {
         )}
         
         <div className="text-center text-xs text-muted-foreground mt-6">
-          v1.0.4
+          v1.1.0
         </div>
       </div>
     </div>
