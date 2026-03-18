@@ -113,10 +113,10 @@ export default function ProfitCalculator() {
     // 计算产品成本
     const 产品成本 = item.当前汇率 > 0 ? item.产品成本RMB / item.当前汇率 : 0;
 
-    // 计算各种费用
-    const AMZ佣金 = item.实时售价本币 * 0.15;
-    const 站内广告 = item.实时售价本币 * 0.20;
-    const 退款费 = item.实时售价本币 * 0.05;
+    // 使用存储的值（用户可修改）
+    const AMZ佣金 = item.AMZ佣金 || 0;
+    const 站内广告 = item.站内广告 || 0;
+    const 退款费 = item.退款费 || 0;
 
     // 计算含广利润
     const 含广利润 = 
@@ -250,7 +250,7 @@ export default function ProfitCalculator() {
             当前汇率: 0,
             产品成本: 0,
             产品成本RMB: 0,
-            AMZ佣金: 0,
+            AMZ佣金: 价格 * 0.15, // 默认15%
             VAT: 0,
             头程单价: 6.5,
             头程重量,
@@ -261,8 +261,8 @@ export default function ProfitCalculator() {
             头程成本: 0,
             FBA费,
             FBA仓储费: 0,
-            站内广告: 0,
-            退款费: 0,
+            站内广告: 价格 * 0.20, // 默认20%
+            退款费: 价格 * 0.05, // 默认5%
             其他: 0,
             含广利润: 0,
             含广利润率: 0,
@@ -563,6 +563,9 @@ export default function ProfitCalculator() {
                             '头程单价',
                             'FBA仓储费',
                             '其他',
+                            'AMZ佣金',
+                            '站内广告',
+                            '退款费',
                           ].includes(col);
 
                           const isImage = col === '亚马逊主图';
@@ -679,7 +682,7 @@ export default function ProfitCalculator() {
         )}
         
         <div className="text-center text-xs text-muted-foreground mt-6">
-          v1.1.0
+          v1.1.1
         </div>
       </div>
     </div>
