@@ -44,6 +44,7 @@ interface ProductData {
 export default function ProfitCalculator() {
   const [data, setData] = useState<ProductData[]>([]);
   const [fileName, setFileName] = useState<string>('');
+  const [globalExchangeRate, setGlobalExchangeRate] = useState<number>(0);
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -294,6 +295,18 @@ export default function ProfitCalculator() {
     );
   };
 
+  // 更新全局汇率，应用到所有行
+  const updateGlobalExchangeRate = (value: string) => {
+    const numValue = parseFloat(value) || 0;
+    setGlobalExchangeRate(numValue);
+    setData(prev => 
+      prev.map(item => {
+        const updatedItem = { ...item, 当前汇率: numValue };
+        return calculateProfit(updatedItem);
+      })
+    );
+  };
+
   // 获取列字母（0 -> A, 1 -> B, ..., 25 -> Z, 26 -> AA, ...）
   const getColumnLetter = (index: number): string => {
     let letter = '';
@@ -536,6 +549,30 @@ export default function ProfitCalculator() {
                 共 {data.length} 条数据，可编辑白色单元格后自动计算
               </CardDescription>
             </CardHeader>
+            <div className="px-6 pb-4">
+              <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                <Label className="text-sm font-medium whitespace-nowrap">全局汇率：</Label>
+                <Input
+                  type="text"
+                  value={editingCell === 'global-exchange-rate' ? editingValue : (globalExchangeRate.toFixed(2))}
+                  onChange={(e) => {
+                    setEditingValue(e.target.value);
+                  }}
+                  onFocus={(e) => {
+                    setEditingCell('global-exchange-rate');
+                    setEditingValue(e.target.value);
+                    e.target.select();
+                  }}
+                  onBlur={(e) => {
+                    setEditingCell(null);
+                    updateGlobalExchangeRate(e.target.value);
+                  }}
+                  className="h-9 text-sm w-32"
+                  placeholder="0.00"
+                />
+                <span className="text-xs text-muted-foreground">输入后自动应用到所有行</span>
+              </div>
+            </div>
             <CardContent>
               <div className="max-h-[70vh] overflow-auto border border-slate-200 dark:border-slate-700 rounded">
                 <table className="w-full border-collapse sticky top-0">
@@ -682,7 +719,7 @@ export default function ProfitCalculator() {
         )}
         
         <div className="text-center text-xs text-muted-foreground mt-6">
-          v1.1.1
+          v1.2.0
         </div>
       </div>
     </div>
