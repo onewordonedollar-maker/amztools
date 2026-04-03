@@ -320,6 +320,20 @@ export default function ProfitCalculator() {
     );
   };
 
+  // 自动获取实时汇率
+  useEffect(() => {
+    fetch('/api/exchange-rate')
+      .then(res => res.json())
+      .then(data => {
+        if (data.rate > 0) {
+          setGlobalExchangeRate(data.rate);
+        }
+      })
+      .catch(error => {
+        console.error('获取汇率失败:', error);
+      });
+  }, []);
+
   // 获取列字母（0 -> A, 1 -> B, ..., 25 -> Z, 26 -> AA, ...）
   const getColumnLetter = (index: number): string => {
     let letter = '';
@@ -763,7 +777,7 @@ export default function ProfitCalculator() {
         )}
         
         <div className="text-center text-xs text-muted-foreground mt-6">
-          v1.2.2
+          v1.3.0
         </div>
       </div>
     </div>
