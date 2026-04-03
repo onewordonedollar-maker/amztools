@@ -637,6 +637,7 @@ export default function ProfitCalculator() {
                         {columnOrder.map((col) => {
                           const value = row[col as keyof ProductData];
                           const isEditable = [
+                            '实时售价本币',
                             '当前汇率',
                             '产品成本RMB',
                             'VAT',
@@ -762,7 +763,7 @@ export default function ProfitCalculator() {
         )}
         
         <div className="text-center text-xs text-muted-foreground mt-6">
-          v1.2.1
+          v1.2.2
         </div>
       </div>
     </div>
