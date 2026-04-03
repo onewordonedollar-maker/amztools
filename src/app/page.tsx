@@ -45,6 +45,7 @@ export default function ProfitCalculator() {
   const [data, setData] = useState<ProductData[]>([]);
   const [fileName, setFileName] = useState<string>('');
   const [globalExchangeRate, setGlobalExchangeRate] = useState<number>(0);
+  const [globalFirstMilePrice, setGlobalFirstMilePrice] = useState<number>(6.5);
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -307,6 +308,18 @@ export default function ProfitCalculator() {
     );
   };
 
+  // 更新全局头程单价，应用到所有行
+  const updateGlobalFirstMilePrice = (value: string) => {
+    const numValue = parseFloat(value) || 0;
+    setGlobalFirstMilePrice(numValue);
+    setData(prev => 
+      prev.map(item => {
+        const updatedItem = { ...item, 头程单价: numValue };
+        return calculateProfit(updatedItem);
+      })
+    );
+  };
+
   // 获取列字母（0 -> A, 1 -> B, ..., 25 -> Z, 26 -> AA, ...）
   const getColumnLetter = (index: number): string => {
     let letter = '';
@@ -550,27 +563,57 @@ export default function ProfitCalculator() {
               </CardDescription>
             </CardHeader>
             <div className="px-6 pb-4">
-              <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-                <Label className="text-sm font-medium whitespace-nowrap">全局汇率：</Label>
-                <Input
-                  type="text"
-                  value={editingCell === 'global-exchange-rate' ? editingValue : (globalExchangeRate.toFixed(2))}
-                  onChange={(e) => {
-                    setEditingValue(e.target.value);
-                  }}
-                  onFocus={(e) => {
-                    setEditingCell('global-exchange-rate');
-                    setEditingValue(e.target.value);
-                    e.target.select();
-                  }}
-                  onBlur={(e) => {
-                    setEditingCell(null);
-                    updateGlobalExchangeRate(e.target.value);
-                  }}
-                  className="h-9 text-sm w-32"
-                  placeholder="0.00"
-                />
-                <span className="text-xs text-muted-foreground">输入后自动应用到所有行</span>
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium rounded-full">
+                    全局设置
+                  </span>
+                  <span className="text-xs text-muted-foreground">修改后自动应用到所有行</span>
+                </div>
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium whitespace-nowrap">当前汇率：</Label>
+                    <Input
+                      type="text"
+                      value={editingCell === 'global-exchange-rate' ? editingValue : (globalExchangeRate.toFixed(2))}
+                      onChange={(e) => {
+                        setEditingValue(e.target.value);
+                      }}
+                      onFocus={(e) => {
+                        setEditingCell('global-exchange-rate');
+                        setEditingValue(e.target.value);
+                        e.target.select();
+                      }}
+                      onBlur={(e) => {
+                        setEditingCell(null);
+                        updateGlobalExchangeRate(e.target.value);
+                      }}
+                      className="h-9 text-sm w-32"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium whitespace-nowrap">头程单价：</Label>
+                    <Input
+                      type="text"
+                      value={editingCell === 'global-first-mile-price' ? editingValue : (globalFirstMilePrice.toFixed(2))}
+                      onChange={(e) => {
+                        setEditingValue(e.target.value);
+                      }}
+                      onFocus={(e) => {
+                        setEditingCell('global-first-mile-price');
+                        setEditingValue(e.target.value);
+                        e.target.select();
+                      }}
+                      onBlur={(e) => {
+                        setEditingCell(null);
+                        updateGlobalFirstMilePrice(e.target.value);
+                      }}
+                      className="h-9 text-sm w-32"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
             <CardContent>
@@ -719,7 +762,7 @@ export default function ProfitCalculator() {
         )}
         
         <div className="text-center text-xs text-muted-foreground mt-6">
-          v1.2.0
+          v1.2.1
         </div>
       </div>
     </div>
