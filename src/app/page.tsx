@@ -274,7 +274,15 @@ export default function ProfitCalculator() {
           };
         })
         .filter((item) => item.实时售价本币 > 0 || item.亚马逊主图)
-        .map(calculateProfit);
+        .map(item => {
+          // 应用全局汇率和头程单价
+          const updatedItem = {
+            ...item,
+            当前汇率: globalExchangeRate || item.当前汇率,
+            头程单价: globalFirstMilePrice || item.头程单价,
+          };
+          return calculateProfit(updatedItem);
+        });
 
       setData(parsedData);
     };
@@ -777,7 +785,7 @@ export default function ProfitCalculator() {
         )}
         
         <div className="text-center text-xs text-muted-foreground mt-6">
-          v1.3.1
+          v1.3.2
         </div>
       </div>
     </div>
