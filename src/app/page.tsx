@@ -777,7 +777,7 @@ export default function ProfitCalculator() {
         )}
         
         <div className="text-center text-xs text-muted-foreground mt-6">
-          v1.3.0
+          v1.3.1
         </div>
       </div>
     </div>
